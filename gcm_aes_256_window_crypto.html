@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html>
+<body>
+
+<h1>The onclick Event</h1>
+
+<p>The onclick event is used to trigger a function when an element is clicked on.</p>
+
+<p>Click the button to trigger a function that will output "Hello World" in a p element with id="demo".</p>
+
+<button onclick="myFunction()">Click me</button>
+
+<p id="demo"></p>
+
+<script>
+
+
+
+
+
+
+
+
+// function myFunction() {
+//   document.getElementById("demo").innerHTML = "Hello World";
+// }
+// function asciiToUint8Array(str) {
+//   var buf = new ArrayBuffer(str.length*2); // 2 bytes for each char
+//   var bufView = new Uint16Array(buf);
+//   for (var i=0, strLen=str.length; i < strLen; i++) {
+//     bufView[i] = str.charCodeAt(i);
+//   }
+//   return buf;
+// }
+function asciiToUint8Array(str){
+  var chars = [];
+  for (var i = 0; i < str.length; ++i){
+    chars.push(str.charCodeAt(i));/*from  w  ww. j  a  v  a  2s.c o  m*/
+  }
+  return new Uint8Array(chars);
+}
+// function bytesToHexString(buf) {
+//   return String.fromCharCode.apply(null, new Uint16Array(buf));
+// }
+function bytesToHexString(byteArray) {
+  return Array.from(byteArray, function(byte) {
+    return ('0' + (byte & 0xFF).toString(16)).slice(-2);
+  }).join('')
+}
+function buf2hex(buffer) { // buffer is an ArrayBuffer
+    return Array.prototype.map.call(new Uint8Array(buffer), x => ('00' + x.toString(16)).slice(-2)).join('');
+}
+
+function bytesToASCIIString(array){
+var result = "";
+for(var i = 0; i < array.length; ++i){
+result+= (String.fromCharCode(array[i]));
+}
+return result;
+}
+
+
+function myFunction() {
+    //refered article.
+    //https://8gwifi.org/docs/window-crypto-aes.jsp
+    var encrypted;
+    document.getElementById("demo").innerHTML = "Hello World";
+    //let ciphertext;
+    //var iv="E1E592E87225847C11D948684F3B070D";
+    //var key="2192B39425BBD08B6E8E61C5D1F1BC9F428FC569FBC6F78C0BC48FCCDB0F42AE"
+    //ciphertext=encryptMessage(key,iv);
+    //decryptMessage(key,iv,ciphertext);
+    
+    //var keyData = hexStringToUint8Array("1bf8be421b201adf247297140aa76cc8211620976125db505d348cd60bee4198");
+    const fromHexString = hexString => new Uint8Array(hexString.match(/.{1,2}/g).map(byte => parseInt(byte, 16)));
+    var keyData = fromHexString('2192B39425BBD08B6E8E61C5D1F1BC9F428FC569FBC6F78C0BC48FCCDB0F42AE');
+    var iv = fromHexString("E1E592E87225847C11D948684F3B070D");
+    console.log(iv,keyData)
+    //var keyData = new TextEncoder("1bf8be421b201adf247297140aa76cc8211620976125db505d348cd60bee4198").encode("¢");
+    //var iv = hexStringToUint8Array("E1E592E87225847C11D948684F3B070D");
+    //var iv = new TextEncoder("E1E592E87225847C11D948684F3B070D").encode("¢");
+    var cipherText;
+    crypto.subtle.importKey("raw", keyData, "aes-gcm", false, ["encrypt"]).then(function(key) {
+        var plainText = "Test encryption and decryption";
+        return crypto.subtle.encrypt({name: "aes-gcm", iv: iv}, key, asciiToUint8Array(plainText));
+        //console.log(cipherText);
+    }).then(function(cipherText) {
+        console.log("this is the cipher text")
+        console.log(cipherText);
+        var k = new Uint8Array(cipherText)
+        console.log(bytesToHexString(k));
+        console.log(k);
+
+
+        var finalCipherText=buf2hex(k);
+        //var hex = Buffer.from(k).toString('hex');
+        console.log(finalCipherText);
+        alert(finalCipherText)
+        crypto.subtle.importKey("raw", keyData, "aes-gcm", false, ["decrypt"]).then(function(key) {
+            var ciphertext = finalCipherText;
+            return crypto.subtle.decrypt({name: "aes-gcm", iv: iv}, key, fromHexString(ciphertext));
+        }).then(function(plainText) {
+          console.log(plainText)
+          var k = new Uint8Array(plainText)
+        
+           console.log(bytesToASCIIString(k));
+        });
+
+    });
+
+
+}
+function getMessageEncoding() {
+    let message = "Test encryption and decryption";
+    let enc = new TextEncoder();
+    return enc.encode(message);
+}
+function decryptMessage(key,iv,ciphertext) {
+    let decrypted = window.crypto.subtle.decrypt(
+      {
+        name: "AES-GCM",
+        iv: iv
+      },
+      key,
+      ciphertext
+    );
+
+    let dec = new TextDecoder();
+    console.log(dec);
+}
+
+function encryptMessage(key,iv) {
+    let encoded = getMessageEncoding();
+    // iv = window.crypto.getRandomValues(new Uint8Array(12));
+    ciphertext = window.crypto.subtle.encrypt(
+      {
+        name: "AES-GCM",
+        iv: iv
+      },
+      key,
+      encoded
+    );
+
+    let buffer = new Uint8Array(ciphertext, 0, 5);
+    console.log(buffer);
+    return buffer
+}
+
+</script>
+
+</body>
+</html>
